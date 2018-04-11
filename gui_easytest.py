@@ -8,7 +8,7 @@ global devices
 #----------------------定义变量--------------------------------#
 devices=[]  
 packagelist=['com.kikaoem.qisiemoji.inputmethod.debug',
-             'com.kikaoem.xiaomi.qisiemoji.inputmethod',      #如需添加或更改包名排序，请在此处修改
+             'com.zzs',      #如需添加或更改包名排序，请在此处修改
              'com.zzz']                           
 def get_deviceid():                            #get设备id 
     readDeviceId = list(os.popen('adb devices').readlines())  
