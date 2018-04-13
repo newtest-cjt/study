@@ -17,7 +17,7 @@ def get_cookie_from_network():
     driver = webdriver.Chrome()
     driver.get(url_login) 
     driver.set_window_size(1366, 768)
-    time.sleep(1)a
+    time.sleep(1)
     cc1=driver.find_element_by_link_text('密码登录')
     cc1.click()
     xpath1=driver.find_element_by_xpath('//*[@id="nameNormal"]')
