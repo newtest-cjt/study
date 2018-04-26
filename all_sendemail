@@ -1,0 +1,177 @@
+#coding=utf-8
+from tkinter import *
+from tkinter import messagebox
+import xlrd
+import tkinter as tk
+import time
+import smtplib
+import os
+import win32ui
+import webbrowser
+from email.mime.text import MIMEText
+from tkinter.ttk import *
+
+x=0
+def chfile():
+    global filename
+    dlg = win32ui.CreateFileDialog(1) # 1表示打开文件对话框 
+    dlg.DoModal()
+    filename=dlg.GetPathName() # 获取选择的文件名称
+    return filename
+filename=chfile()
+root = tk.Tk()
+root.geometry("600x330+500+200")               #距离屏幕边缘值
+root.wm_title('群发器v1.0')                 #root窗口标题
+root.resizable(width=False, height=False)
+#choosefile=Button(root,text='选择文件',command=chfile)
+#choosefile.grid(row=0,column=4)
+try:
+    data=xlrd.open_workbook(filename)
+    sheet_name=data.sheet_names() #获取所有sheet的名字
+    sheet=data.sheet_by_name(sheet_name[0]) #通过sheet名字来找sheet
+
+    def getemailname():
+        for k in range(sheet.ncols):
+            if sheet.row_values(0)[k]=='姓名' or sheet.row_values(1)[k]=='姓名':
+                return k
+    def getemailnum():
+        for k in range(sheet.ncols):
+            if sheet.row_values(0)[k]=='邮箱' or sheet.row_values(1)[k]=='邮箱':
+                return k
+    try:
+        a = getemailname()
+        namelist=sheet.col_values(a)
+        def createch(num):
+            states=[]
+            def test(i):
+                states[i]=not states[i]
+            if num<len(namelist)//10:
+                for i in range(10):
+                    
+                    label_i = Label(root,text=namelist[i+10*num+1])
+                    label_i.grid(row=i,column=0)
+                    b_i= tk.IntVar()
+                    check_i = tk.Checkbutton(root,variable=b_i,textvariable=b_i,command=(lambda i=i:test(i)))
+                    check_i.grid(row=i,column=1)
+                    check_i.select()
+                    b=b_i.get()
+                    
+                    if b==0 :
+                        states.append(0)
+                    elif b==1:
+                        states.append(1)
+            else:
+                for i in range(10):
+                    try:
+                        label_i = Label(root,text=namelist[i+10*num])
+                        label_i.grid(row=i,column=0)
+                    except:
+                        label_i = Label(root,text='null')
+                        label_i.grid(row=i,column=0)
+                    b_i= tk.IntVar()
+                    check_i = tk.Checkbutton(root,variable=b_i,textvariable=b_i,command=(lambda i=i:test(i)))
+                    check_i.grid(row=i,column=1)
+                    check_i.select()
+                    b=b_i.get()
+                    
+                    if b==0 :
+                        states.append(0)
+                    elif b==1:
+                        states.append(1)
+                        
+            return states
+        def nextye():
+            global x,states
+            if x<len(namelist)/10:
+                createch(x)
+                states=createch(x)
+                x=x+1
+                return x,states
+            else:
+                messagebox.showinfo(title='提示',message='没有下一页了')
+            
+        def userconfig():
+            def getdata():
+                global user,password
+                user=e1.get()
+                password=e2.get()
+                root1.destroy()
+                url='https://myaccount.google.com/u/2/security#signin'
+                #webbrowser.open(url)
+                messagebox.showinfo(title='提示',message='配置成功')
+            root1=tk.Toplevel(root)
+            Label(root1,text='邮箱账号：').grid(row=0)
+            e1=Entry(root1)
+            e1.grid(row=0,column=1)
+            Label(root1,text='邮箱密码：').grid(row=1)
+            e2=Entry(root1)
+            e2['show']='*'
+            e2.grid(row=1,column=1,rowspan=1)
+            b1=Button(root1,text='一键配置',command=getdata)                     
+            b1.grid(row=3,column=0,columnspan=1,rowspan=1)
+        
+        def sendmail():
+            print('账号：%s\n密码：%s\n'%(user,password))
+            print('第'+str(x)+'页')
+            print(states)
+            global title,word
+            title=e3.get()
+            word=t.get('0.0',END)
+            b=getemailnum()
+            to=sheet.col_values(b)
+            msg = MIMEText(word)               #内容
+            msg["Subject"] = title        #标题
+            msg["From"]    = user
+            msg["To"]      =','.join(to)
+            for i in range(10): 
+                try:
+                    s = smtplib.SMTP('smtp.gmail.com',587)
+                    #s = smtplib.SMTP_SSL("smtp.qq.com", 465)
+                    s.ehlo()
+                    s.starttls()
+                    s.login(user,password)
+                    if states[i]==1 or states[i]=='True':
+                        if len(to[i+10*(x-1)+1])==0:
+                            try:
+                                print(sheet.col_values(a)[i+10*(x-1)+1]+'邮箱未填写\n')
+                            except:
+                                print('null邮箱未填写')
+                        else:
+                            if re.findall('@',to[i+10*(x-1)+1])==['@']:
+                                
+                                    s.sendmail(user,to[i+10*(x-1)+1],msg.as_string())
+                                    s.quit()
+                                    print ('姓名：%s\n邮箱：%s\n状态：succed\n时间:%s'%(sheet.col_values(a)[i+10*(x-1)+1],to[i+10*(x-1)+1],time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())))   
+                            else:
+                                print(sheet.col_values(a)[i+10*(x-1)+1]+'邮箱格式不正确\n')
+                    elif states[i]==0 or states[i]=='False':
+                        try:
+                            print('姓名：%s不发送'%sheet.col_values(a)[i+10*(x-1)+1])
+                        except:
+                            print('姓名:null不发送')
+                except smtplib.SMTPException:
+                    print ('姓名：%s\n邮箱：%s\n状态：fail\n时间:%s'%(sheet.col_values(a)[i+10*(x-1)+1],to[i+10*(x-1)+1],time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())))
+        
+        yeshu,states=nextye()
+        
+        button1 = Button(root,text='发送邮件',command=sendmail)
+        button1.grid(row=10,column=0)
+        button1 = Button(root,text='下一页',command=nextye)
+        button1.grid(row=10,column=1)
+        button1 = Button(root,text='账号配置',command=userconfig)
+        button1.grid(row=11,column=0)
+        button1 = Button(root,text='退出',command=root.destroy)
+        button1.grid(row=11,column=1) 
+        Label(root,text='标题:',font='bold').grid(row=0,column=2)
+        e3=Entry(root,font = ('宋体', '13', 'bold'))
+        e3.grid(row=0,column=3)
+        Label(root,text='内容:',font='bold').grid(row=1,column=2)
+        t=Text(root,width=50,height=16)
+        t.grid(row=2,column=3,columnspan=5,rowspan=8)
+        root.mainloop()
+    
+    except:
+        print('姓名列或邮箱列不存在')
+except:
+    print('选择文件不是表格形式')
+os.system('pause')
