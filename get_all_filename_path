@@ -1,0 +1,15 @@
+import os
+import fnmatch
+
+def main():
+    path='D:\\equipment\\character\\'
+    f = open('all.txt', 'w')
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if fnmatch.fnmatch(name, '*.equ'):
+                f.write(os.path.join(root+'\\', name))
+                f.write('\n')
+    f.close()
+    print( 'done...')
+if __name__=='__main__':
+    main()
