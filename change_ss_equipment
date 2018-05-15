@@ -1,0 +1,28 @@
+all=open('all.txt','r')
+lines=all.readlines()
+num=len(lines)
+for l in range(num):
+    print('进度 %d/%d'%(l,num))
+    f=open(lines[l].strip('\n'),'r+',encoding='utf-8')
+    res=f.readlines()
+    for i in range(len(res)):
+        if res[i]=='[attach type]\n' and res[i+1]=='`[trade]`\n':
+            M=i+1
+    for j in range(len(res)):
+        if res[j]=='[rarity]\n' :
+            if res[j+1]=='4\t\n':
+                N='ss'
+            else:
+                N=0
+    if N=='ss':
+        try:
+            res[M]='`[sealing]`\n'
+            print('change ss ok')
+            del M
+            del N
+        except:
+            print('已改或不需要改')
+    else:
+        print('不是史诗')
+    f1=open(lines[l].strip('\n'),'w+',encoding='utf-8')
+    f1.writelines(res)
