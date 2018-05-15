@@ -1,7 +1,10 @@
+#coding=utf-8
+import time
 all=open('all.txt','r')
 lines=all.readlines()
 num=len(lines)
 for l in range(num):
+    N=0
     print('进度 %d/%d'%(l,num))
     f=open(lines[l].strip('\n'),'r+',encoding='utf-8')
     res=f.readlines()
@@ -12,8 +15,7 @@ for l in range(num):
         if res[j]=='[rarity]\n' :
             if res[j+1]=='4\t\n':
                 N='ss'
-            else:
-                N=0
+    print(N)
     if N=='ss':
         try:
             res[M]='`[sealing]`\n'
@@ -26,3 +28,5 @@ for l in range(num):
         print('不是史诗')
     f1=open(lines[l].strip('\n'),'w+',encoding='utf-8')
     f1.writelines(res)
+            
+    
