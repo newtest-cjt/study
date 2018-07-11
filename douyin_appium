@@ -2,7 +2,8 @@
 from appium import webdriver
 import time
 import os
-
+import random
+from selenium.webdriver.support.wait import WebDriverWait
 ###手机参数信息
 desired_caps = {}
 desired_caps['platformName'] = 'Android'
@@ -14,21 +15,48 @@ desired_caps['unicodeKeyboard'] = 'True'
 desired_caps['resetKeyboard'] = 'True'
 desired_caps["noReset"]= 'true'
 driver = webdriver.Remote('http://127.0.0.1:4723/wd/hub', desired_caps)
-time.sleep(5)####观看抖音广告or 等待抖音加载东西
-driver.swipe(536,1208,536,416,800)#滑动进入下一个视频（第一次滑动是划出来右侧按钮）
-os.system('adb shell input tap 536 1000')#点下屏幕，不看视频
+'''
+x=driver.get_window_size()['width']
+y=driver.get_window_size()['height']
+x1=x*0.5
+y1=y*0.5
+y2=y*0.2
+'''
+def first_swipe():
+    driver.swipe(536,1300,536,360,800)  # 滑动进入下一个视频（第一次滑动是划出来右侧按钮）
+    os.system('adb shell input tap 500 1000')  # 点下屏幕，不看视频
+def random_comment():
+    comment=[
+        u'赞',
+        u'火了叫我',
+        u'666',
+        u'good'
+    ]
+    res_comment=random.sample(comment,1)
+    return res_comment
 
-def main()
+try:
+    WebDriverWait(driver, 1).until(lambda a: a.find_element_by_id('com.ss.android.ugc.aweme:id/azn')).click()
+    time.sleep(0.5)
+    first_swipe()#先执行try，如果有广告就点跳过再滑动，没广告直接滑动
+except:
+    time.sleep(1)
+    first_swipe()
+
+
+def main():
+    res_comment=random_comment()
+    print(res_comment)
     driver.find_element_by_id('com.ss.android.ugc.aweme:id/uc').click()#点评论按钮
     driver.find_element_by_id('com.ss.android.ugc.aweme:id/a3t').click()#点评论框
     s=driver.find_element_by_id('com.ss.android.ugc.aweme:id/ud')
-    s.send_keys(u'赞')#评论内容
-    time.sleep(0.5)
+    s.send_keys(res_comment)#评论内容
+    time.sleep(0.2)
     driver.find_element_by_id('com.ss.android.ugc.aweme:id/uf').click()#点击发送按钮
     time.sleep(0.5)
     driver.press_keycode(4)#按返回键收起评论
     time.sleep(1)
-    driver.swipe(536,1208,536,416,800)#滑动进入下一个视频
-    os.system('adb shell input tap 536 1000')#点下屏幕，不看视频
-for i in range(100):      #循环100次
+    driver.swipe(536,1308,536,360,800)  # 滑动进入下一个视频（第一次滑动是划出来右侧按钮）
+    os.system('adb shell input tap 500 1000')#点下屏幕，不看视频
+for i in range(3):      #循环x次
     main()
