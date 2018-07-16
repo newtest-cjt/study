@@ -27,16 +27,21 @@ def first_swipe():
     os.system('adb shell input tap 500 1000')  # 点下屏幕，不看视频
 def random_comment():
     comment=[
-        u'赞',
-        u'火了叫我',
-        u'666',
-        u'good'
+        u'我在农村，为了赞你这条视频，我走了几十公里的山路来到镇上，坐车到城里的网吧赞你这条说说的，发现毒奶粉真好玩。\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'两月前一个帅哥给我点赞、找到了女朋友，不知道今天点赞的你，明天会发生什么？\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'屏幕前的陌生人 我不认识你 但我想祝你坚强 祝你可爱 祝你帅气 祝你漂亮 祝你一生永远被爱。\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'我女朋友说了，今晚有多少个赞就啪多少次，兄弟们不要多，四个就够了，多了明天起不来\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'愿漂泊的人都有酒喝，愿孤独的人都会唱歌。 愿相爱的人都有未来，愿等待的人都有回答.\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'每个人都有一技之长，就像他擅长说谎，你擅长原谅.\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'林深时见鹿，海蓝时见鲸，梦醒时见你 可实际：林深时雾起，海蓝时浪涌，梦醒时夜续 未见鹿，未见鲸，亦未见你。\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你',
+        u'天天吹UZI有多厉害，今天我峡谷之巅排到他，我们五个去包他，还不是让我们跑掉了俩个？\n十年前，我救了赛利亚，十年后我愿意再救一次，昔日地下城需要你，勇士',
+        u'一天劫匪闯进银行，握着枪吼到：躺下，不许动!大家都默默躺倒。劫匪望着躺在桌上的出纳说：请你躺文明些!这是抢劫不是强奸\n十年前，我救了赛利亚，十年后我想再救一次，搜索群昔日地下城，阿拉德需要你'
     ]
     res_comment=random.sample(comment,1)
     return res_comment
 
 try:
-    WebDriverWait(driver, 1).until(lambda a: a.find_element_by_id('com.ss.android.ugc.aweme:id/azn')).click()
+    #WebDriverWait(driver, 1).until(lambda a: a.find_element_by_id('com.ss.android.ugc.aweme:id/azn')).click()
     time.sleep(0.5)
     first_swipe()#先执行try，如果有广告就点跳过再滑动，没广告直接滑动
 except:
@@ -46,17 +51,23 @@ except:
 
 def main():
     res_comment=random_comment()
-    print(res_comment)
-    driver.find_element_by_id('com.ss.android.ugc.aweme:id/uc').click()#点评论按钮
-    driver.find_element_by_id('com.ss.android.ugc.aweme:id/a3t').click()#点评论框
-    s=driver.find_element_by_id('com.ss.android.ugc.aweme:id/ud')
+    driver.find_element_by_id('com.ss.android.ugc.aweme:id/aeq').click()  # 点红心
+    time.sleep(0.5)
+    #'com.ss.android.ugc.aweme:id/aeq'
+    driver.find_element_by_id('com.ss.android.ugc.aweme:id/uf').click()#点评论按钮
+    time.sleep(0.5)
+    driver.find_element_by_id('com.ss.android.ugc.aweme:id/a90').click()#点评论框
+    s=driver.find_element_by_id('com.ss.android.ugc.aweme:id/ug')
     s.send_keys(res_comment)#评论内容
-    time.sleep(0.2)
-    driver.find_element_by_id('com.ss.android.ugc.aweme:id/uf').click()#点击发送按钮
+    time.sleep(1)
+    driver.find_element_by_id('com.ss.android.ugc.aweme:id/ui').click()#点击发送按钮
     time.sleep(0.5)
     driver.press_keycode(4)#按返回键收起评论
     time.sleep(1)
     driver.swipe(536,1308,536,360,800)  # 滑动进入下一个视频（第一次滑动是划出来右侧按钮）
+    time.sleep(0.5)
     os.system('adb shell input tap 500 1000')#点下屏幕，不看视频
-for i in range(3):      #循环x次
+    time.sleep(0.5)
+for i in range(1000):      #循环x次
     main()
+    print('运行第%s次'%(i))
