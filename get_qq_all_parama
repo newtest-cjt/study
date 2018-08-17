@@ -1,0 +1,33 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+import re
+driver = webdriver.Chrome()
+driver.get('https://qzone.qq.com/')
+
+driver.switch_to.frame('login_frame')
+driver.find_element_by_id('switcher_plogin').click()
+
+driver.find_element_by_id('u').clear()
+driver.find_element_by_id('u').send_keys('3235359188')  #这里填写你的QQ号
+driver.find_element_by_id('p').clear()
+driver.find_element_by_id('p').send_keys('cheng953400')  #这里填写你的QQ密码
+
+driver.find_element_by_id('login_button').click()
+time.sleep(2)
+html = driver.page_source
+g_qzonetoken=re.search('window\.g_qzonetoken = \(function\(\)\{ try\{return (.*?);\} catch\(e\)',html)#从网页源码中提取g_qzonetoken
+g_qzonetoken = str(g_qzonetoken[0]).split('\"')[1]
+cookie = {}#初始化cookie字典
+for elem in driver.get_cookies():#取cookies
+    cookie[elem['name']] = elem['value']
+def getGTK(cookie):
+    hashes = 5381
+    for letter in cookie['p_skey']:
+        hashes += (hashes << 5) + ord(letter)
+    return hashes & 0x7fffffff
+gtk=getGTK(cookie)#通过getGTK函数计算gtk
+print(g_qzonetoken)
+print(gtk)
+print(cookie)
+
