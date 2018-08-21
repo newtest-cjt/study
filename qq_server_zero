@@ -1,0 +1,157 @@
+# coding=utf-8
+from socket import *
+import threading
+from time import ctime
+import time
+import json
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import re
+from selenium.webdriver import ActionChains
+from PIL import Image
+import requests
+from io import BytesIO
+ip = '0.0.0.0'  # 监听哪些网络  127.0.0.1是监听本机 0.0.0.0是监听整个网络
+port = 95  # 监听自己的哪个端口
+buffsize = 40000  # 接收从客户端发来的数据的缓存区大小
+tcpSerSock = socket(AF_INET, SOCK_STREAM)
+tcpSerSock.bind((ip, port))
+tcpSerSock.listen(5)
+socket = []
+def look_yanzhengma():
+    im = Image.open("tc.jpg")
+    pix = im.load()
+    width = im.size[0]
+    height = im.size[1]
+    for x in range(width):
+        for y in range(height):
+            r, g, b = pix[x, y]
+            if r<127:
+                r=0
+            else:
+                r=255
+            if g<127:
+                g=0
+            else:
+                g=255
+            if b<127:
+                b=0
+            else:
+                b=255
+            pix[x,y]=(r,g,b)
+    #是否找到
+    nRes = -1
+    for x in range(width-40):
+        if nRes > 0 :
+            break
+        for y in range(height-40):
+            if nRes > 0:
+                break
+            if pix[x, y] == (255, 255, 255):
+                nRes = x
+                for i in range(0, 15):
+                    rgb1 = pix[x,y+i]
+                    rgb2 = pix[x+1,y+i]
+                    if rgb1 != (255, 255, 255) or rgb2 != (0, 0, 0):
+                        nRes = -1
+                        break
+    return nRes
+def get_cookie():
+    res={}
+    qq_url='https://qzone.qq.com/'
+    qq_posturl='https://user.qzone.qq.com/proxy/domain/w.qzone.qq.com/cgi-bin/tfriend/friend_addfriend.cgi?'
+
+    #option = webdriver.ChromeOptions()
+    #option.add_argument('headless')
+    #driver = webdriver.Chrome(chrome_options=option)
+    driver = webdriver.Chrome()
+    driver.get(qq_url)
+    driver.switch_to.frame('login_frame')
+    driver.find_element_by_id('switcher_plogin').click()
+    driver.find_element_by_id('u').clear()
+    driver.find_element_by_id('u').send_keys(user)  # 这里填写你的QQ号
+    driver.find_element_by_id('p').clear()
+    driver.find_element_by_id('p').send_keys(password)  # 这里填写你的QQ密码
+    driver.find_element_by_id('login_button').click()
+    time.sleep(2)
+    try:
+        driver.find_element_by_id('login_button').click()
+        time.sleep(2)
+    except:
+        print('login ok')
+    try:
+        flag=driver.find_element_by_id('newVcodeArea')
+        if flag:
+            driver.switch_to.frame(0)
+            image_url = driver.find_element_by_xpath('//*[@id="slideBkg"]').get_attribute('src')
+            image_o = requests.get(image_url)
+            image_oen = Image.open(BytesIO(image_o.content))
+            image_oen.save('tc.jpg')
+            print('验证中')
+            yidong = look_yanzhengma()
+            print(yidong)
+            action = ActionChains(driver)
+            source = driver.find_element_by_xpath("//*[@id='tcaptcha_drag_thumb']")  # 需要滑动的元素
+            action.click_and_hold(source).perform()  # 鼠标左键按下不放
+            action.move_by_offset(300, 12)  # 需要滑动的坐标
+            action.release().perform()  # 释放鼠标
+            time.sleep(0.5)
+            print('yanzheng success')
+        else:
+            print('没找到验证码的图，错误')
+    except:
+
+        html = driver.page_source
+        g_qzonetoken = re.search('window\.g_qzonetoken = \(function\(\)\{ try\{return (.*?);\} catch\(e\)',
+                                 html)  # 从网页源码中提取g_qzonetoken
+        g_qzonetoken = str(g_qzonetoken[0]).split('\"')[1]
+        cookie = {}  # 初始化cookie字典
+
+        for elem in driver.get_cookies():  # 取cookies
+            cookie[elem['name']] = elem['value']
+        driver.quit()
+        def getGTK(cookie):
+            hashes = 5381
+            for letter in cookie['p_skey']:
+                hashes += (hashes << 5) + ord(letter)
+            return hashes & 0x7fffffff
+        gtk = getGTK(cookie)  # 通过getGTK函数计算gtk
+        res['url']=qq_posturl+'qzonetoken='+str(g_qzonetoken)+'&'+'g_tk='+str(gtk)
+        res['cookie']=cookie
+        return res
+def handle():
+    global user
+    global password
+    while True:
+        for i in socket:
+            try:
+                data = i.recv(buffsize)  # 到这里程序继续向下执行
+            except Exception as e:
+                continue
+            if not data:
+                socket.remove(i)
+                continue
+            data = data.decode('utf-8')
+            data = json.loads(data)
+            if data['type'] == "MC-QQ":
+                user = data['user']
+                password = data['password']
+                sendtext=get_cookie()
+                i.sendall(str(sendtext).encode())
+                i.close()
+            else:
+                print('error')
+                i.close()
+
+t = threading.Thread(target=handle)
+if __name__ == '__main__':
+
+    t.start()
+    print(u'我在%s线程中 ' % threading.current_thread().name)  # 本身是主线程
+    print('waiting for connecting...')
+    while True:
+        clientSock, addr = tcpSerSock.accept()
+        print('connected from:', addr)
+        clientSock.setblocking(0)
+        socket.append(clientSock)
+
