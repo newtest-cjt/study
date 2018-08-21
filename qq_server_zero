@@ -90,13 +90,35 @@ def get_cookie():
             print('验证中')
             yidong = look_yanzhengma()
             print(yidong)
+            yidong=yidong*270/680-12
+
             action = ActionChains(driver)
             source = driver.find_element_by_xpath("//*[@id='tcaptcha_drag_thumb']")  # 需要滑动的元素
             action.click_and_hold(source).perform()  # 鼠标左键按下不放
-            action.move_by_offset(300, 12)  # 需要滑动的坐标
+
+            action.move_by_offset(yidong, 0)  # 需要滑动的坐标
             action.release().perform()  # 释放鼠标
             time.sleep(0.5)
             print('yanzheng success')
+            html = driver.page_source
+            g_qzonetoken = re.search('window\.g_qzonetoken = \(function\(\)\{ try\{return (.*?);\} catch\(e\)',
+                                     html)  # 从网页源码中提取g_qzonetoken
+            g_qzonetoken = str(g_qzonetoken[0]).split('\"')[1]
+            cookie = {}  # 初始化cookie字典
+
+            for elem in driver.get_cookies():  # 取cookies
+                cookie[elem['name']] = elem['value']
+            driver.quit()
+
+            def getGTK(cookie):
+                hashes = 5381
+                for letter in cookie['p_skey']:
+                    hashes += (hashes << 5) + ord(letter)
+                return hashes & 0x7fffffff
+
+            gtk = getGTK(cookie)  # 通过getGTK函数计算gtk
+            res['url'] = qq_posturl + 'qzonetoken=' + str(g_qzonetoken) + '&' + 'g_tk=' + str(gtk)
+            res['cookie'] = cookie
         else:
             print('没找到验证码的图，错误')
     except:
@@ -118,7 +140,7 @@ def get_cookie():
         gtk = getGTK(cookie)  # 通过getGTK函数计算gtk
         res['url']=qq_posturl+'qzonetoken='+str(g_qzonetoken)+'&'+'g_tk='+str(gtk)
         res['cookie']=cookie
-        return res
+    return res
 def handle():
     global user
     global password
