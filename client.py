@@ -2,7 +2,7 @@
 from socket import *
 import threading
 import time
-address='123.207.127.103'   #服务器的ip地址
+address='0.0.0.0'   #服务器的ip地址
 port=95           #服务器的端口号
 buffsize=1024        #接收数据的缓存大小
 s=socket(AF_INET, SOCK_STREAM)
