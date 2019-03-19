@@ -1,0 +1,73 @@
+# coding:utf-8
+import xlrd  # 需要额外安装此库。安装命令pip install xlrd
+import pyecharts  # 需要额外安装此库。安装命令pip install pyecharts
+                # 另外需要安装pyecharts_snapshot库 pip install pyecharts_snapshot
+import time
+import os
+import datetime
+
+pwd = os.getcwd()  # 获取当前路径
+all_file = []  # 定义一个数组用来存所有文件名
+
+
+def file_name(pwd):
+    for root, dirs, files in os.walk(pwd):
+        all_file.append(files)  # 获取当前目录下所有文件名称
+    now_date = datetime.datetime.now().strftime('%Y-%m-%d')  # 定义变量now_dtae 的值等于当天的日期，格式为yy-mm-dd
+    ff = now_date + '.xlsx'  # 定义变量ff的值 等于  当天日期加上文件格式 的字符串
+    if ff in all_file[0]:  # 判断all_file里是否存在 名字是ff 的文件
+        print('检查文件是否存在：......')
+        print('ok!')
+    else:
+        print('当天文件不存在：false!')
+    return ff
+
+
+ff = file_name(pwd)  # ff的值等于当前日期加文件格式，如2019-03-12.xlsx
+now = int(time.time())
+timeStruct = time.localtime(now)
+strTime = time.strftime("%Y.%m.%d %H:%M:%S", timeStruct)  # 当前准确时间，用于图表上显示
+data = xlrd.open_workbook(ff)  # 定义工作表数据data
+table = data.sheets()[0]  # 定义table即excel文件的第一个sheet所有数据
+# 将列的值存入字符串
+x = table.col_values(0)  # 读取第一列的值
+y = table.col_values(1)  # 读取第二列的值
+M = []  # 10型servername
+N = []  # 10型servernumber
+
+S = []  # 16型servername
+T = []  # 16型servernumber
+for i in range(1, len(x)):
+    if x[i].find('mbx') != -1:  # 如果第一列servername字符串包含"mbx",认为是10型服务器，将这种的servername和servernumber取出分别放在M,N数组里
+        M.append(x[i])
+        N.append(y[i])
+for i in range(1, len(x)):
+    if x[i].find('mbx') == -1:
+        S.append(x[i])
+        T.append(y[i])
+sum_10 = sum(N)  # sum_10即所有10型服务器数量的和
+sum_16 = sum(T)
+S.reverse()  # 根据需求，倒序16型服务器，不太清楚，如果是按大小排序需要修改此处。
+T.reverse()
+str_10 = 'Exchange2010邮件服务器邮箱数量统计\n总计' + str(sum_10)  # 定义两个不同的话术字符串
+str_16 = 'Exchange2016邮件服务器邮箱数量统计\n总计' + str(sum_16)
+
+
+def create_chart(number):  # 生成图表函数
+    if number == 10:
+        bar = pyecharts.Bar('By:岳孟杰', strTime, width=1000, title_text_size=10)
+        bar.add(str_10, M, N, label_color='blue', xaxis_rotate=90, xaxis_margin=2)
+        bar.render('Exchange2010.html')
+    elif number == 16:
+        bar = pyecharts.Bar('By:岳孟杰', strTime, width=1000, title_text_size=10)
+        bar.add(str_16, S, T, xaxis_rotate=90, label_color='blue', xaxis_margin=2)
+        bar.render('Exchange2016.html')
+
+
+def main():
+    create_chart(10)
+    create_chart(16)
+
+
+main()
+os.system('pause')  # 按任意键退出
