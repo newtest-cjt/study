@@ -1,0 +1,98 @@
+# -*- coding: UTF-8 -*-
+from aip import AipSpeech
+from tkinter import *
+import tkinter as tk
+from tkinter import messagebox
+import os
+from pydub import AudioSegment
+import wave
+import win32ui
+import xlrd
+
+APP_ID = '16747184'
+API_KEY = 'vzMAGVTCq8chbXkKlBFUZQF7'
+SECRET_KEY = '8rYnCpkTCigz5FUZQEjfnZ7PY7l8GyvR'
+client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
+
+
+def chfile():
+    global filename
+    dlg = win32ui.CreateFileDialog(1) # 1表示打开文件对话框
+    dlg.DoModal()
+    filename=dlg.GetPathName() # 获取选择的文件名称
+    #return filename
+    data=xlrd.open_workbook(filename)
+    sheet=data.sheets()[0]
+    all_text=sheet.col_values(0)
+    lenth=len(all_text)
+    for i in range(lenth):
+        result = client.synthesis(all_text[i], 'zh', 1, {
+            'vol': 100, 'per': 1
+        })
+        if not isinstance(result, dict):
+            with open(all_text[i] + '.mp3', 'wb') as f:
+                f.write(result)
+        pwd = os.getcwd()
+        path = pwd + '\\' + all_text[i] + '.mp3'
+        sound = AudioSegment.from_file(path, format='MP3')
+        # 将读取的波形数据转化为wav
+        f = wave.open(all_text[i] + ".wav", 'wb')
+        f.setnchannels(1)  # 频道数
+        f.setsampwidth(2)  # 量化位数
+        f.setframerate(16000)  # 取样频率
+        f.setnframes(len(sound._data))  # 取样点数，波形数据的长度
+        f.writeframes(sound._data)  # 写入波形数据
+        f.close()
+        os.remove(path)
+        print('进度%d/%d\n%s'%(i+1,lenth,all_text[i]))
+
+    messagebox.showinfo(title='提示', message='转化成功')
+    os.startfile(os.getcwd())
+def get_audio():
+    text = e1.get()
+    result = client.synthesis(text, 'zh', 1, {
+        'vol': 100, 'per': 1
+    })
+    if not isinstance(result, dict):
+        with open(text + '.mp3', 'wb') as f:
+            f.write(result)
+    pwd=os.getcwd()
+    path=pwd+'\\'+text+'.mp3'
+    print(path)
+    return path
+
+def one_wav():
+    text= e1.get()
+    print(text)
+    path=get_audio()
+    sound = AudioSegment.from_file(path, format = 'MP3')
+    # 将读取的波形数据转化为wav
+    f = wave.open(text+".wav", 'wb')
+    f.setnchannels(1)   # 频道数
+    f.setsampwidth(2)   # 量化位数
+    f.setframerate(16000)   # 取样频率
+    f.setnframes(len(sound._data))   # 取样点数，波形数据的长度
+    f.writeframes(sound._data)   # 写入波形数据
+    f.close()
+    print('delete old mp3 file,only save wav file')
+    os.remove(path)
+    messagebox.showinfo(title='提示', message='转化成功')
+    os.startfile(os.getcwd())
+
+
+
+root = tk.Tk()                                 #创建窗口
+root.geometry("400x250+400+0")               #距离屏幕边缘值
+root.wm_title('文字转wav音频')                           #root窗口标题
+root.resizable(width=False, height=False)      #拒绝改变窗口大小，如需改变，请改为True
+e1=Entry(root)
+e1.grid(row=0,column=1)
+
+btn_audio = Button(root, text="单个转化", command=one_wav)
+btn_audio.grid(row=0, column=0, sticky=W)
+
+
+btn_audio_file = Button(root, text="选择文件(批量转化)", command=chfile)
+btn_audio_file.grid(row=1, column=0, sticky=W)
+
+root.mainloop()
