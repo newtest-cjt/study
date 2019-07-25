@@ -1,0 +1,73 @@
+#coding=utf-8
+import requests
+import re
+import json
+import mysql.connector
+import threading
+import time
+
+music_RankingList=[19723756,3779629,2884035,3778678]#分别对应 飙升榜、新歌榜、原创歌曲榜、热歌榜
+
+class main():
+    def __init__(self):
+        self.headers={
+            'user-agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
+        }
+        self.cookies={
+            '1':'1'
+        }
+        self.table='comments'
+        self.user='root'
+        self.password='root'
+        self.database='wangyiyun'
+        self.conn = mysql.connector.connect(user=self.user, password=self.password, database=self.database)
+        self.cursor = self.conn.cursor()
+    def get_MusicId(self,rank_numbe):
+        url='https://music.163.com/discover/toplist?id='+str(rank_numbe)
+        respone=requests.get(url=url,headers=self.headers).text
+        result=re.findall('<a href="/song\?id=(\d+)">(.+?)</a></li><li>',respone)   #demo: [('36270426', '来自天堂的魔鬼'), ('554241732', '我的名字')]
+        return result
+    def exceute_sql(self,sql):
+        self.cursor.execute(sql)
+    def get_comments(self,rank_number):
+        sql = "insert into comments (rank_id,comments_time,comments_likedCount,comments_content,u_vip,u_nick,u_location,u_userId,music_id,music_name) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
+        uri='http://music.163.com/api/v1/resource/comments/R_SO_4_'
+        result=self.get_MusicId(rank_number)#榜单音乐id和name
+        rank_id=rank_number
+        for i in range(len(result)):
+            print('进度%d/%d'%(i+1,len(result)))
+            music_id=result[i][0]
+            music_name=result[i][1]
+            print('音乐:%s\n%s\n'%(music_id,music_name))
+            url=uri+str(music_id)
+            respone=requests.get(url=url,headers=self.headers).text
+            res_json=json.loads(respone)#转为json
+            total=res_json['total']#总评论数
+            hotComments=res_json['hotComments']#热评信息内容
+            for i in range(3):
+                comments_time=hotComments[i]['time']#时间
+                content=str(hotComments[i]['content'])#评论
+                likedCount=hotComments[i]['likedCount']#评论点赞数
+                user_info = hotComments[i]['user']  # 所有用户信息
+                u_vip = user_info['vipType']  # vip
+                u_nick=user_info['nickname']#昵称
+                u_location=user_info['locationInfo']#地区
+                u_userId=user_info['userId']#id
+                values=(int(rank_id),str(comments_time),int(likedCount),str(content),str(u_vip),str(u_nick),str(u_location),int(u_userId),str(music_id),str(music_name))
+                self.cursor.execute(sql,values)
+                self.conn.commit()
+            #self.cursor.close()
+
+run=main()
+
+
+# 创建新线程
+t1=threading.Thread(target=run.get_comments,args=(,))
+t2=threading.Thread(target=)
+t3=threading.Thread(target=run_c)
+t4=threading.Thread(target=run_d)
+# 开启新线程
+t1.start()
+t2.start()
+t3.start()
+t4.start()
