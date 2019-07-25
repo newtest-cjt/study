@@ -1,0 +1,341 @@
+# coding=utf-8
+from tkinter import *
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+import os
+import time
+import datetime
+
+import zipfile
+import shutil
+
+devices = []
+
+
+def get_deviceid():  # get设备id
+    global devices
+    readDeviceId = list(os.popen('adb devices').readlines())
+    str_init = ''
+    for i in range(len(readDeviceId)):
+        str_init += readDeviceId[i]
+    devices = re.findall('\n(.+?)\t', str_init, re.S)
+    return devices
+
+
+root = tk.Tk()  # 创建窗口
+root.geometry("400x250+0+0")  # 距离屏幕边缘值
+root.wm_title('自动抓取log工具v2.8')  # root窗口标题
+root.resizable(width=False, height=False)  # 拒绝改变窗口大小，如需改变，请改为True
+text_device = Text(root, width=10, height=1)
+text_device.grid(row=0, column=1)
+
+
+# -----------------------函数区--------------------------------#
+
+def clear_log():
+    clear_tc_data()
+    messagebox.showinfo(title='提示', message='清除成功(wav/data/log/wakeupPcm)')
+
+
+def zipDir(dirpath, outFullName):
+    """
+    压缩指定文件夹
+    :param dirpath: 目标文件夹路径
+    :param outFullName: 压缩文件保存路径+xxxx.zip
+    :return: 无
+    """
+    zip = zipfile.ZipFile(outFullName, "w", zipfile.ZIP_DEFLATED)
+    for path, dirnames, filenames in os.walk(dirpath):
+        fpath = path.replace(dirpath, '')
+
+        for filename in filenames:
+            zip.write(os.path.join(path, filename), os.path.join(fpath, filename))
+    zip.close()
+
+
+def init_voice():
+    # p4 = r'adb shell am broadcast -a vr.start --es product horizon'
+    # p5 = r'adb root'
+    # p6 = 'adb shell am broadcast -n com.chehejia.car.voice/com.chehejia.car.voice.receiver.VoiceCtrlReceiver -a com.chehejia.car.voice.init'
+    # os.popen(p4)
+    # time.sleep(1)
+    # os.popen(p5)
+    # time.sleep(1)
+    # os.popen(p6)
+    # messagebox.showinfo(title='提示', message='激活语音成功')
+    # print('init success')
+    os.popen('adb shell am start com.chj.voicerecognize.captureservice/.MainActivity')
+
+
+def screen_adb():
+    p1 = r'adb shell screencap -p /sdcard/1.png'
+    p2 = r'adb pull /sdcard/1.png d:\log\1.png'
+    os.popen(p1)
+    time.sleep(2)
+    os.popen(p2)
+    open_logpath()
+
+
+def get_current_time():
+    time_current = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    return time_current
+
+
+def clear_tc_data():
+    p_1 = r'adb shell "cd /sdcard/tencent/wecarspeech/wakeupPcm && rm -rf *"'
+    #p_2 = r'adb shell "cd /sdcard/tencent/wecarspeech/data && rm -rf *"'
+    p_3 = r'adb shell "cd /sdcard/tencent/wecarspeech/wav && rm -rf *"'
+    p_4 = r'adb shell "cd /sdcard/tencent/wecarspeech/log && rm -rf *"'
+    os.popen(p_1)
+    #os.popen(p_2)
+    os.popen(p_3)
+    #os.popen(p_4)
+    #os.popen(r'adb shell "cd sdcard/tencent/wecarnavi/log/ &&rm -rf *"')
+
+def push_tc_cfg():
+    isExists = os.path.exists('d:\\tc_cfg\\wakeup.cfg')
+    if isExists ==True:
+        res = os.popen(r'adb shell "cd /sdcard/tencent/wecarspeech/ &&ls "').readlines()
+        if str(res).find('cfg') != -1:
+            print(r'cfg mulu is already')
+            res_next = os.popen(r'adb shell "cd /sdcard/tencent/wecarspeech/cfg &&ls "').readlines()
+            if str(res_next).find('wake') != -1:
+                print('wake.cfg is already')
+                messagebox.showinfo(title='提示', message='wake.cfg is already')
+            else:
+                os.popen('adb push d:\\tc_cfg\\wakeup.cfg /sdcard/tencent/wecarspeech/cfg/')
+                messagebox.showinfo(title='提示', message='push wake.cfg sucess')
+        else:
+            os.popen('adb shell "cd /sdcard/tencent/wecarspeech/ &&mkdir cfg"')
+            res_next = os.popen('adb shell "cd /sdcard/tencent/wecarspeech/cfg &&ls "').readlines()
+            if str(res_next).find('wake') != -1:
+                print('wake.cfg is already')
+                messagebox.showinfo(title='提示', message='wake.cfg is already')
+            else:
+                os.popen('adb push d:\\tc_cfg\\wakeup.cfg /sdcard/tencent/wecarspeech/cfg/')
+                messagebox.showinfo(title='提示', message='push wake.cfg sucess')
+        try:
+            os.popen('adb push d:\\tc_cfg\\blacklist.txt /data/local/tmp/')
+        except:
+            print('自动导入monkey黑名单失败。请将blacklist.txt放到d:\\tc_cfg')
+    else:
+        messagebox.showinfo(title='提示', message=r'请把wake.cfg和blacklist.txt文件放到d:\tc_cfg目录下')
+
+def pull_res():
+    time_current = get_current_time()
+    print('log_'+time_current + '.log\nBegin............')
+    clear_tc_data()#执行前先清除tc目录下多余文件
+    p_4 = r'adb logcat -c'
+    p_5 = r'adb logcat >d:\log\log_' + str(time_current) + '.log'
+    os.popen(p_4)
+    os.popen('adb logcat --flush')
+    os.popen(p_5)
+
+def countDown(number):
+    lbl1.config(bg='yellow')
+    lbl1.config(height=1, font=('times', 20, 'bold'))
+    for k in range(number,0,-1):
+        lbl1["text"] = k
+        root.update()
+        time.sleep(1)
+    #lbl1.config(bg='green')
+    #lbl1.config(fg='white')
+    lbl1.config(bg='white')
+    lbl1.config(height=1, font=('times', 10))
+    lbl1["text"] = "3分钟log"
+
+
+def pull_tc_navilog():
+    countDown(180)
+    os.popen(r'adb pull sdcard/tencent/wecarnavi/log d:\log')
+    time.sleep(2)
+    zipDir(r'D:\log\log', r'D:\log\navi_log.zip')
+    messagebox.showinfo(title='提示', message="your life reduce 3 minute!!")
+    open_logpath()
+def end_logcat():
+    pid_list = []
+    p_6 = r'adb shell "ps | grep log"'
+    get_logcat_pid = list(os.popen(p_6).readlines())
+    print(get_logcat_pid)
+    for i in get_logcat_pid:
+        pid = re.findall(r'.+?(\d+).+?S.*log', i)
+        if len(pid) != 0:
+            pid_list.append(pid)
+        pid_last = re.findall(r'.+?(\d+).+?R.*log', i)
+    if len(pid_last) != 0:
+        pid_list.append(pid_last)
+    for i in range(len(pid_list)):
+        p_7 = r'adb shell kill -9 ' + str(pid_list[i][0])  ##kill pid
+        os.popen(p_7)
+    print('End...............')
+    open_logpath()
+
+
+def tc_logcat_pull():  # 导出tc  log
+    time_current = get_current_time()
+    print(time_current + '\n腾讯log导出中......请等待30s')
+    cmd_1 = r'adb shell am broadcast -a carcontrol.flushLog'
+    os.popen(cmd_1)
+    time.sleep(30)
+    cmd_2 = r'adb pull /sdcard/tencent/wecarspeech d:\log'
+    os.popen(cmd_2)
+    time.sleep(3)
+    zipDir(r'D:\log\wecarspeech', r'D:\log\tclog.zip')
+    open_logpath()
+
+
+def mkdir():
+    path = 'D:\\log'
+    path1 = 'd:\\tc_cfg'
+    isExists_t=os.path.exists(path1)
+    print('检查D盘目录是否存在 log 和 tc_cfg 目录')
+    if not isExists_t:
+        os.makedirs()
+        print('静默创建d:\\tc_cfg目录,请把wake.cfg文件放入 d:\\tc_cfg')
+    else:
+        print('d:\\tc_cfg已存在')
+        pass
+    isExists = os.path.exists(path)
+    if not isExists:
+        os.makedirs(path)
+        tips = path + ' 创建成功'
+        messagebox.showinfo(title='提示', message=tips)
+    else:
+        tips = path + ' 目录已存在'
+        messagebox.showinfo(title='提示', message=tips)
+
+
+
+def create_logdir(path):
+    path = path
+    isExists = os.path.exists(path)
+    if not isExists:
+        os.makedirs(path)
+        # tips = path + ' 创建成功'
+        return True
+    else:
+        # tips = path + ' 目录已存在'
+        return False
+
+
+filelist = []
+
+
+def del_file():
+    rootdir = 'd:\log'
+    filelist = os.listdir(rootdir)  # 列出该目录下的所有文件名
+    for f in filelist:
+        filepath = os.path.join(rootdir, f)  # 将文件名映射成绝对路劲
+        if os.path.isfile(filepath):  # 判断该文件是否为文件或者文件夹
+            os.remove(filepath)  # 若为文件，则直接删除
+            print(str(filepath) + " removed!")
+        elif os.path.isdir(filepath):
+            shutil.rmtree(filepath, True)  # 若为文件夹，则删除该文件夹及文件夹内所有文件
+    messagebox.showinfo(title='提示', message='清除D:\\log目录成功')
+
+
+def delete_text():
+    text_device.delete(0.0, tk.END)
+
+def monkey_deputy():
+    os.system('adb shell monkey -d 1 --pkg-blacklist-file /data/local/tmp/blacklist.txt --ignore-crashes --monitor-native-crashes --ignore-timeouts --ignore-native-crashes --pct-motion 60 --pct-touch 30 --pct-nav 5 --pct-majornav 5 --pct-syskeys 0 --pct-anyevent 0 -s 251314251314 -v-v-v --throttle 200 400000')
+
+
+def devicee():
+    delete_text()
+    if len(get_deviceid()) == 0:
+        messagebox.showinfo(title='提示', message='当前没有设备连接')
+    else:
+        text_device.insert(1.0, devices)
+def offline_log():
+    currenttime = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    path_a = 'D:\\log\\offline_logs\\' + currenttime + '\\logs'
+    path_b = 'D:\\log\\offline_logs\\' + currenttime + '\\Log_management'
+    create_logdir(path_a)
+    create_logdir(path_b)
+    p_a = 'adb logcat --flush'
+    p_b = 'REM adb pull /data/logs D:\\log\\offline_logs\\' + currenttime + '\\logs'
+    p_c = 'adb pull /log D:\\log\\offline_logs\\' + currenttime + '\\Log_management'
+    os.popen(p_a)
+    print(p_a)
+    os.popen(p_b)
+    print(p_b)
+    os.popen(p_c)
+    print(p_c)
+    print('请等待offline_log导出完成，过程可能较长.....')
+    open_logpath()
+
+def open_logpath():
+    os.startfile(r'd:\log')
+def show_packagename():
+    os.system(r'adb shell "dumpsys window | grep mCurrentFocus"')
+
+def adb_reboot():
+    os.popen('adb reboot')
+
+def start_settings():
+    os.popen('adb shell am start com.android.settings/com.android.settings.Settings')
+
+def restar_adb():
+    os.system('adb kill-servr')
+    os.system('adb start-servr')
+
+
+# --------------------------按钮区-------------------------------#
+btn_device = Button(root, text="检测设备", command=devicee)
+btn_device.grid(row=0, column=0, sticky=W)
+
+btn_start = Button(root, text='logcat(开始)', command=pull_res)
+btn_start.grid(row=1, column=0, sticky=W, rowspan=2)
+btn_end = Button(root, text='logcat(结束)', command=end_logcat)
+btn_end.grid(row=1, column=1, sticky=W, rowspan=2)
+btn_setting = Button(root, text='打开设置', command=start_settings)
+btn_setting.grid(row=1, column=3, sticky=W, rowspan=2)
+
+
+
+
+
+
+btn_opendir = Button(root, text='打开log目录', command=open_logpath)
+btn_opendir.grid(row=2, column=2, sticky=W)
+btn_pname = Button(root, text='当前应用包名', command=show_packagename)
+btn_pname.grid(row=3, column=3, sticky=W)
+
+
+btn_clear_log = Button(root, text='清空log目录', command=del_file)
+btn_clear_log.grid(row=3, column=2, sticky=W)
+
+btn_zip = Button(root, text='tc_log(30秒)', command=tc_logcat_pull)
+btn_zip.grid(row=4, column=0, sticky=W)
+
+btn_offline = Button(root, text='offline_log', command=offline_log)
+btn_offline.grid(row=4, column=1, sticky=W)
+
+btn_createdir = Button(root, text='创建log目录(首)', command=mkdir)
+btn_createdir.grid(row=4, column=2, sticky=W)
+btn_push_tc_cfg = Button(root, text='导入wake.cfg(刷)', command=push_tc_cfg)
+btn_push_tc_cfg.grid(row=4, column=3, sticky=W)
+
+lbl1 = Button(root,text='navi_log(3分钟)',command=pull_tc_navilog)
+lbl1.grid(row=5, column=3)
+
+
+btn_screen = Button(root, text='车机截图 ', command=screen_adb)
+btn_screen.grid(row=5, column=2, sticky=W)
+
+btn_clear_data = Button(root, text='清除tc_log', command=clear_log)
+btn_clear_data.grid(row=6, column=0, sticky=W)
+
+btn_monkey_d = Button(root, text='副屏monkey', command=monkey_deputy)
+btn_monkey_d.grid(row=7, column=0, sticky=W)
+
+btn_init_voice = Button(root, text='打开VR_app', command=init_voice)
+btn_init_voice.grid(row=6, column=1, sticky=W)
+
+btn_reboot = Button(root, text='重启设备 ', command=adb_reboot)
+btn_reboot.grid(row=6, column=2, sticky=W)
+
+
+root.mainloop()
