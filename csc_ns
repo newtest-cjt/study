@@ -1,0 +1,158 @@
+#coding=utf-8
+import requests
+import json
+from tkinter import *
+import tkinter as tk
+from tkinter import ttk
+import threading
+import time
+import os
+from tkinter import messagebox
+
+def mkdir():
+    cwd=os.getcwd()
+    path=cwd+'\\'+'config.ini'
+    print(path)
+    isExists_t=os.path.exists(path)
+    print('check  config.ini..')
+    if not isExists_t:
+        f=open(path,'w')
+        f.close()
+        print('create config.ini success.')
+    else:
+        print('config.ini is exist')
+        pass
+    return path
+
+root = tk.Tk()
+root.geometry("500x300+400+100")  # 距离屏幕边缘值
+root.wm_title('快速抢单v2.0')  # root窗口标题
+root.resizable(width=False, height=False)
+cookie_linshi=StringVar()
+try:
+    path=mkdir()
+    f=open(path,'r')
+    text=f.read()
+    cookie_linshi.set(text)
+except:
+    messagebox.showinfo(title='提示', message='请先保存cookie')
+e3 = Entry(root,width=20,textvariable=cookie_linshi)
+e3.grid(row=2, column=0,columnspan=3)
+
+uri='http://crm.ymt360.com/api/sales/salesMgmtAssignLeadsBatch/leads/recommend?page=1&per_page=20&tagCode='
+code=['1556340358316','1555667218063','1555745305632','1557405074944','1557853007977','1557981630452','1558294318300','1558306365842','hot_30_location_product','hot_15_location_product','hot_07_location_product','hot_products_recommend','1560543425610','1560543467162','1562396119662']
+
+
+url_post='http://crm.ymt360.com/api/sales/salesMgmtGrowth/assign'
+def show_msg(*args):
+    p = packagelist.index(packagename.get())
+    return code[p]
+def get_response(id):       #通过不同的tagid 获取当前分类下所有用户的信息
+    Authorization = e3.get()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
+        'Authorization': Authorization
+    }
+    id_list=[]
+    url=uri+id
+    res=requests.get(url,headers=headers).text
+    result=json.loads(res)
+    number=len(result['result'])
+    print('此次刷新获取到%s名用户'%(number))
+    data=result['result']
+    for i in range(number):
+        print(data[i]['customerId'])
+        print(data[i]['customerName'])
+        id_list.append(data[i]['customerId'])
+    return id_list,number
+
+def post_id(id_list):      #领取该用户,传入一个只有用户id的list
+    Authorization = e3.get()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36',
+        'Authorization': Authorization
+    }
+    for i in range(len(id_list)):
+        k='['+str(id_list[i])+']'
+        res=requests.post(url=url_post,data=k,headers=headers).text
+        print('id:'+k+res)
+def  create():
+    type_id=show_msg()
+    a,b=get_response(type_id)
+    c=int(b/5)
+    t1=threading.Thread(target=post_id,args=(a[0:c],))
+    t2=threading.Thread(target=post_id,args=(a[c:c*2],))
+    t3=threading.Thread(target=post_id,args=(a[c*2:c*3],))
+    t4=threading.Thread(target=post_id,args=(a[c*3:c*4],))
+    t5=threading.Thread(target=post_id,args=(a[c*4:],))
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t5.start()
+
+def save_cookie():
+    path=mkdir()
+    cookie=e3.get()
+    f=open(path,'w')
+    f.write(cookie)
+    f.close()
+    messagebox.showinfo(title='提示', message='保存成功')
+    return
+def xunluo(ti):
+    type_id = show_msg()
+    number=ti*120
+    for i in range(number):
+        print('巡逻中%s/%s' % (i,number))
+        a, b = get_response(type_id)
+        if b!=0:
+            print('恭喜查到了！自动开启多线程抢单')
+            break
+        else:
+            time.sleep(0.5)
+    create()
+def xunluo_thread():
+    ti=int(e1.get())
+    t=threading.Thread(target=xunluo,args=(ti,))
+    t.start()
+packagelist=   ['商家认证',
+             '会员',
+             'T+0',
+            '交易额TOP',
+         'GMV>=1000',
+         '30天联系量>=100',
+         '最近付款',
+         '商城下单未付款',
+         '30天付费热门地区',
+         '15天付费热门地区',
+         '7天付费热门地区',
+        '热门品类',
+         '牛商密度低',
+         '牛商密度高',
+         '近7日付款'
+         ]
+
+test=tk.StringVar()                                          #创建下拉框
+packagename=ttk.Combobox(root,textvariable=test,state='readonly')#state=readonly输入框不可写入，如需写入请删掉state
+packagename['values']=(packagelist)
+packagename.grid(row=0,column=0,columnspan=3)
+packagename.current(7)                                     #下拉框默认显示值
+packagename.bind("<<ComboboxSelected>>", show_msg)
+
+b_select=Button(root,text='查询',width=10,command=lambda : get_response(show_msg()))
+b_select.grid(row=0,column=3)
+b_submit=Button(root,text='抢单',width=10,command=create)
+b_submit.grid(row=0,column=4)
+Label(root, text='巡逻',width=5).grid(row=1, column=0)
+linshi=StringVar()
+linshi.set('3')
+e1 = Entry(root,width=5,textvariable=linshi)
+e1.grid(row=1, column=1)
+
+Label(root, text='分钟',width=5).grid(row=1, column=2)
+b_submit=Button(root,text='开始巡逻',width=10,command=xunluo_thread)
+b_submit.grid(row=1,column=3)
+
+b_submit=Button(root,text='保存cookie',width=10,command=save_cookie)
+b_submit.grid(row=2,column=3)
+root.mainloop()
