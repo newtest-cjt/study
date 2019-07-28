@@ -32,15 +32,12 @@ sheet_email = data_email.sheet_by_name(sheet_email_name[0])  # 通过sheet名字
 
 root = tk.Tk()
 root.geometry("880x500+400+100")  # 距离屏幕边缘值
-root.wm_title('明众定制v1.2')  # root窗口标题
+root.wm_title('明众定制v2.1')  # root窗口标题
 root.resizable(width=False, height=False)
 
 def getemailname():#获取姓名所在列
     for k in range(sheet_gongzi.ncols):
         if sheet_gongzi.row_values(0)[k] == '姓名' or sheet_gongzi.row_values(1)[k] == '姓名':
-            print(k)
-        else:
-            print('k is null')
             return k
 
 
@@ -50,6 +47,8 @@ def getemailnum():#获取员工编号所在列
             return k
 
 b = getemailnum()
+
+
 employeenumberlist = sheet_gongzi.col_values(b)[2:] #从工资单表格获取员工编号
 
 def getemail_table():#从email表格获取员工编号对应的邮箱
@@ -68,9 +67,16 @@ def getemail_table():#从email表格获取员工编号对应的邮箱
     table_email = sheet_email.col_values(N)  # 邮箱表获取邮箱
 
     for i in range(len(employeenumberlist)):
-        for j in range(len(table_employee)):
-            if employeenumberlist[i]==table_employee[j]:
-                email_list.append(table_email[j])
+        if employeenumberlist[i] not in table_employee:
+            print(employeenumberlist[i]+'is not ')
+            email_list.append('nullnullnullnullnullnull')
+        else:
+            for j in range(len(table_employee)):
+                if employeenumberlist[i]==table_employee[j]:
+                    if table_email[j]=='':
+                        email_list.append('nullnullnullnullnullnull')
+                    else:
+                        email_list.append(table_email[j])
 
     return email_list#这个list是工资表人名对应的email列表
 def add_element(number):
@@ -82,8 +88,6 @@ def add_element(number):
 email_list=getemail_table()#从邮箱表获取对应的邮箱list
 namelist=[]
 a = getemailname()
-print(a)
-print(sheet_gongzi.col_values(a))
 namelist_a = sheet_gongzi.col_values(a)[2:]#获取工资单表的所有人名单
 for i in range(len(namelist_a)):
     M=list(namelist_a[i])
@@ -105,7 +109,7 @@ def createch(num):
             label_i = Label(root, text=employeenumberlist[i + 10 * num])
             label_i.grid(row=i, column=0)
             label_i = Label(root, text=namelist[i + 10 * num])
-            label_i.grid(row=i, column=1)
+            label_i.grid(row=i, column=1,sticky='w')
             label_i = Label(root, text=email_list[i + 10 * num])
             label_i.grid(row=i, column=2)
             b_i = tk.IntVar()
@@ -124,14 +128,14 @@ def createch(num):
                 label_i = Label(root, text=employeenumberlist[i + 10 * num])
                 label_i.grid(row=i, column=0)
                 label_i = Label(root, text=namelist[i + 10 * num])
-                label_i.grid(row=i, column=1)
+                label_i.grid(row=i, column=1,sticky='w')
                 label_i = Label(root, text=email_list[i + 10 * num])
                 label_i.grid(row=i, column=2)
             except:
                 label_i = Label(root, text='nullnull')
                 label_i.grid(row=i, column=0)
                 label_i = Label(root, text='nullnullnull')
-                label_i.grid(row=i, column=1)
+                label_i.grid(row=i, column=1,sticky='w')
                 label_i = Label(root, text='nullnullnullnullnullnull')
                 label_i.grid(row=i, column=2)
 
@@ -220,8 +224,24 @@ def return_html(data_detail,name):
     word = word1 + word2 + word3 + word4 + word5 + word6 + '</tr><tr>' + word7 + '</tr>' + word8
     return word
 def sendmail():
-    user = 'mingzhong_hr@sina.com'
-    password = 'a12345'
+    user1 = 'mingzhong_hr@sina.com'
+    password1 = 'a12345'
+    user2 = 'mingzhong__hr@sina.com'
+    password2 = '@123456789'
+    user3 = '793610576@qq.com'
+    password3 = 'vfgxfmlduvapbbcg'
+    if v.get()==1:
+        user=user1
+        password=password1
+        smtp_type="smtp.sina.com"
+    elif v.get()==2:
+        user = user2
+        password = password2
+        smtp_type = "smtp.sina.com"
+    elif v.get()==3:
+        user = user3
+        password = password3
+        smtp_type = "smtp.qq.com"
     print('账号：%s\n密码：%s\n' % (user, password))
     print('第' + str(x) + '页')
     print(states)
@@ -238,7 +258,7 @@ def sendmail():
                 msg["From"] = user
                 content = MIMEText(word, 'html', 'utf-8')  # 内容
                 msg.attach(content)
-                s = smtplib.SMTP_SSL("smtp.sina.com", 465)
+                s = smtplib.SMTP_SSL(smtp_type, 465)
                 s.ehlo()
                 s.login(user, password)
                 s.sendmail(user, to[i + 10 * (x - 1)], msg.as_string())
@@ -255,22 +275,33 @@ def sendmail():
             print('姓名:null不发送')
 
 yeshu, states = nextye()
+v = tk.IntVar()
+v.set(1)
 
 button1 = Button(root, text='发送邮件', command=sendmail)
 button1.grid(row=10, column=0)
-button1 = Button(root, text='下一页', command=nextye)
-button1.grid(row=10, column=1)
-button1 = Button(root, text='账号配置', command=userconfig)
-button1.grid(row=11, column=0)
-button1 = Button(root, text='退出', command=root.destroy)
-button1.grid(row=11, column=1)
+button2 = Button(root, text='下一页', command=nextye)
+button2.grid(row=10, column=1)
+button3 = Button(root, text='账号配置', command=userconfig)
+button3.grid(row=11, column=0)
+button4 = Button(root, text='退出', command=root.destroy)
+button4.grid(row=11, column=1)
+
+Label(root, text='请先勾选发件人邮箱:', font='bold',background='#8B8878').grid(row=12, column=0,sticky='w')
+r1 = tk.Radiobutton(root, text="mingzhong_hr@sina.com", value=1, variable=v)
+r1.grid(row=13, column=0,sticky='w')
+r2 = tk.Radiobutton(root, text="mingzhong__hr@sina.com", value=2, variable=v)
+r2.grid(row=14, column=0,sticky='w')
+r3 = tk.Radiobutton(root, text="793610576@qq.com", value=3, variable=v)
+r3.grid(row=15, column=0,sticky='w')
 Label(root, text='标题:', font='bold').grid(row=0, column=4)
 e3 = Entry(root, font=('宋体', '13', 'bold'))
-e3.grid(row=0, column=5)
-Label(root, text='邮件内容:', font='bold').grid(row=1, column=4,)
+e3.grid(row=0, column=5,sticky='w')
+Label(root, text='邮件内容:', font='bold').grid(row=1, column=4)
 t = Text(root, width=50, height=16)
 t.insert("insert",'邮件内容中员工姓名用大写的A代替\n如：亲爱的A老师，你好。这是你9月的工资详情')
 t.grid(row=2, column=4, columnspan=5, rowspan=8)
+print(v.get())
 root.mainloop()
 
 os.system('pause')
