@@ -224,11 +224,11 @@ def return_html(data_detail,name):
     word = word1 + word2 + word3 + word4 + word5 + word6 + '</tr><tr>' + word7 + '</tr>' + word8
     return word
 def sendmail():
-    user1 = 'mingzhong_hr@sina.com'
-    password1 = 'a12345'
-    user2 = 'mingzhong__hr@sina.com'
-    password2 = '@123456789'
-    user3 = '793610576@qq.com'
+    user1 = '1'
+    password1 = '1'
+    user2 = '2'
+    password2 = 'x'
+    user3 = '3'
     password3 = 'vfgxfmlduvapbbcg'
     if v.get()==1:
         user=user1
