@@ -14,6 +14,7 @@ import wave
 import win32ui
 import xlrd
 import threading
+import random
 
 
 devices = []
@@ -35,7 +36,7 @@ def get_deviceid():  # get设备id
 
 root = tk.Tk()  # 创建窗口
 root.geometry("550x400+0+0")  # 距离屏幕边缘值
-root.wm_title('语音小工具v3.0')  # root窗口标题
+root.wm_title('语音小工具v3.0(最终版)')  # root窗口标题
 root.resizable(width=False, height=False)  # 拒绝改变窗口大小，如需改变，请改为True
 text_device = Text(root, width=11,height=1)
 text_device.grid(row=0, column=1,sticky=W)
@@ -310,12 +311,23 @@ def countDown(number):
     lbl1["text"] = "3分钟log"
 
 
-def pull_tc_navilog():
-    countDown(180)
-    os.popen(r'adb pull sdcard/tencent/wecarnavi/log d:\log')
-    time.sleep(2)
-    zipDir(r'D:\log\log', r'D:\log\navi_log.zip')
-    messagebox.showinfo(title='提示', message="your life reduce 3 minute!!")
+def pull_maplog():
+    #countDown(180)
+    current_map=packagename.get()
+    print('当前导出的是 %s 的log'%(current_map))
+    if current_map=='腾讯地图':
+        os.system(r'adb pull sdcard/tencent/wecarnavi/log d:\\log\tc_map\\')
+        print('map log pull is success !')
+        zipDir(r'D:\log\tc_map', r'D:\log\腾讯地图.zip')
+    elif current_map=='高德地图':
+        os.system(r'adb pull /sdcard/AmapAutoLog d:\log\\gaode_map\\')
+        print('map log pull is success !')
+        zipDir(r'D:\log\gaode_map', r'D:\log\高德地图.zip')
+    elif current_map=='百度地图':
+        os.system(r'adb pull /sdcard/MapAuto d:\log\\bd_map\\')
+        print('map log pull is success !')
+        zipDir(r'D:\log\bd_map', r'D:\log\百度地图.zip')
+
     open_logpath()
 def end_logcat():
     pid_list = []
@@ -346,7 +358,7 @@ def tc_logcat_pull():  # 导出tc  log
     os.popen(cmd_1)
     time.sleep(30)
     cmd_2 = r'adb pull /sdcard/tencent/wecarspeech d:\log'
-    os.popen(cmd_2)
+    os.system(cmd_2)
     time.sleep(3)
     zipDir(r'D:\log\wecarspeech', r'D:\log\wecarspeech.zip')
     open_logpath()
@@ -465,6 +477,28 @@ def start_settings():
 def restar_adb():
     os.system('adb kill-servr')
     os.system('adb start-servr')
+def show_msg(*args):
+    p = packagelist.index(packagename.get())
+    return p
+def play():
+    str_word=[
+        'you are very bored',
+        'why click this button?',
+        'do you want go to home'
+    ]
+    data=random.choice(str_word)
+    print(data)
+    return
+packagelist=   ['百度地图',
+             '高德地图',
+             '腾讯地图'
+         ]
+test=tk.StringVar()                                          #创建下拉框
+packagename=ttk.Combobox(root,textvariable=test,width=8,state='readonly')#state=readonly输入框不可写入，如需写入请删掉state
+packagename['values']=(packagelist)
+packagename.grid(row=0,column=4,sticky=W)
+packagename.current(1)                                     #下拉框默认显示值
+packagename.bind("<<ComboboxSelected>>", show_msg)
 
 
 # --------------------------按钮区-------------------------------#
@@ -477,6 +511,9 @@ btn_end = Button(root, text='logcat(结束)',bg='#668B8B', width=10,command=end_
 btn_end.grid(row=1, column=1, sticky=W, rowspan=2)
 btn_setting = Button(root, text='打开设置', width=10,command=start_settings)
 btn_setting.grid(row=1, column=3, sticky=W, rowspan=2)
+btn_map = Button(root, text='地图log', width=10,command=pull_maplog)
+btn_map.grid(row=1, column=4, sticky=W,rowspan=2)
+
 e1=Entry(root,width=11)
 e1.grid(row=0,column=2,sticky=W)
 btn_audio = Button(root, text="文字→音频",  width=10,command=one_wav)
@@ -505,7 +542,7 @@ btn_createdir.grid(row=4, column=2, sticky=W)
 btn_push_tc_cfg = Button(root, text='导入cfg(刷)', bg='#EEEED1',width=10,command=push_tc_cfg)
 btn_push_tc_cfg.grid(row=4, column=3, sticky=W)
 
-lbl1 = Button(root,text='navi_log',width=10,command=pull_tc_navilog)
+lbl1 = Button(root,text='???',width=10,command=play)
 lbl1.grid(row=5, column=3,sticky=W)
 dipingxian = Button(root,text='配置误唤醒',width=10,bg='#CDC1C5',command=Misawakening_config)
 dipingxian.grid(row=7, column=3,sticky=W)
