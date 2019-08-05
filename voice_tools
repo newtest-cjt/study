@@ -13,6 +13,8 @@ from pydub import AudioSegment
 import wave
 import win32ui
 import xlrd
+import threading
+
 
 devices = []
 path_cfg = 'libhrsc_cfg.so'
@@ -334,7 +336,9 @@ def end_logcat():
     open_logpath()
 
 def thread_tc_log():
-    return
+    t = threading.Thread(target=tc_logcat_pull)
+    t.start()
+
 def tc_logcat_pull():  # 导出tc  log
     time_current = get_current_time()
     print(time_current + '\n腾讯log导出中......请等待30s')
@@ -464,18 +468,18 @@ def restar_adb():
 
 
 # --------------------------按钮区-------------------------------#
-btn_device = Button(root, text="检测设备",width=10,command=devicee)
+btn_device = Button(root, text="检测设备",width=10,bg='#CCCCCC',command=devicee)
 btn_device.grid(row=0, column=0, sticky=W)
 
-btn_start = Button(root, text='logcat(开始)', width=10,command=start_logcat)
+btn_start = Button(root, text='logcat(开始)',bg='#00FF7F', width=10,command=start_logcat)
 btn_start.grid(row=1, column=0, sticky=W, rowspan=2)
-btn_end = Button(root, text='logcat(结束)', width=10,command=end_logcat)
+btn_end = Button(root, text='logcat(结束)',bg='#668B8B', width=10,command=end_logcat)
 btn_end.grid(row=1, column=1, sticky=W, rowspan=2)
 btn_setting = Button(root, text='打开设置', width=10,command=start_settings)
 btn_setting.grid(row=1, column=3, sticky=W, rowspan=2)
 e1=Entry(root,width=11)
 e1.grid(row=0,column=2,sticky=W)
-btn_audio = Button(root, text="文字→音频(.wav)",  width=15,command=one_wav)
+btn_audio = Button(root, text="文字→音频",  width=10,command=one_wav)
 btn_audio.grid(row=0, column=3, columnspan=2,sticky=W)
 
 
@@ -490,24 +494,24 @@ btn_pname.grid(row=3, column=3, sticky=W)
 btn_clear_log = Button(root, text='清空log目录', width=10,command=del_file)
 btn_clear_log.grid(row=3, column=2, sticky=W)
 
-btn_zip = Button(root, text='wecarspeech', width=10,command=tc_logcat_pull)
+btn_zip = Button(root, text='wecarspeech', width=10,bg='#FFE4E1',command=thread_tc_log)
 btn_zip.grid(row=4, column=0, sticky=W)
 
-btn_offline = Button(root, text='offline_log', width=10,command=offline_log)
+btn_offline = Button(root, text='offline_log', width=10,bg='#FFFFFF',command=offline_log)
 btn_offline.grid(row=4, column=1, sticky=W)
 
-btn_createdir = Button(root, text='创建log目录', width=10,command=mkdir)
+btn_createdir = Button(root, text='建log目录(首)',bg='#EEA9B8', width=10,command=mkdir)
 btn_createdir.grid(row=4, column=2, sticky=W)
-btn_push_tc_cfg = Button(root, text='导入cfg文件', width=10,command=push_tc_cfg)
+btn_push_tc_cfg = Button(root, text='导入cfg(刷)', bg='#EEEED1',width=10,command=push_tc_cfg)
 btn_push_tc_cfg.grid(row=4, column=3, sticky=W)
 
 lbl1 = Button(root,text='navi_log',width=10,command=pull_tc_navilog)
 lbl1.grid(row=5, column=3,sticky=W)
-dipingxian = Button(root,text='配置误唤醒',width=10,command=Misawakening_config)
+dipingxian = Button(root,text='配置误唤醒',width=10,bg='#CDC1C5',command=Misawakening_config)
 dipingxian.grid(row=7, column=3,sticky=W)
 
 btn_screen = Button(root, text='车机截图 ', width=10,command=screen_adb)
-btn_screen.grid(row=7, column=1, sticky=W)
+btn_screen.grid(row=5, column=2, sticky=W)
 
 btn_clear_data = Button(root, text='清除wecarspeech缓存',width=24,command=clear_log)
 btn_clear_data.grid(row=5, column=0, columnspan=2,sticky=W)
@@ -522,11 +526,11 @@ btn_reboot = Button(root, text='重启设备 ',width=10, command=adb_reboot)
 btn_reboot.grid(row=7, column=2, sticky=W)
 
 Label(root, text=r'提示:',font='blod').grid(row=8, column=0,columnspan=4,sticky=W)
-Label(root, text=r'0.首次使用先点【创建log目录】：创建了d:\log和d:\tc_cfg目录').grid(row=9, column=0,columnspan=10,sticky=W)
-Label(root, text='1.普通语音：logcat、wecarspeech').grid(row=10, column=0,columnspan=10,sticky=W)
-Label(root, text='2.地图相关：logcat、wecarspeech、对应地图log').grid(row=11, column=0,columnspan=4,sticky=W)
+Label(root, text=r'0.首次使用先点【建log目录】按钮：创建了d:\log和d:\tc_cfg目录').grid(row=9, column=0,columnspan=10,sticky=W)
+Label(root, text='1.语音bug：logcat、wecarspeech').grid(row=10, column=0,columnspan=10,sticky=W)
+Label(root, text='2.地图bug：logcat、wecarspeech、对应地图log').grid(row=11, column=0,columnspan=4,sticky=W)
 Label(root, text='3.清除wecarspeech缓存：清除/sdcard/tencent/wecarspeech/wav、data、wakeupPcm').grid(row=12, column=0,columnspan=10,sticky=W)
-Label(root, text=r'4.导入cfg：把wake.cfg/aisdk.cfg/balcklist.txt三个文件放入d:\tc_cfg目录,刷完点击导到对应位置').grid(row=13, column=0,columnspan=10,sticky=W)
+Label(root, text=r'4.导入cfg：把wake.cfg/aisdk.cfg/balcklist.txt放入d:\tc_cfg目录,刷机完点击按钮自动放到对应位置').grid(row=13, column=0,columnspan=10,sticky=W)
 Label(root, text=r'5.配置误唤醒：自动执行了误唤醒log的配置步骤，过程中可能包含重启车机').grid(row=14, column=0,columnspan=10,sticky=W)
 
 root.mainloop()
