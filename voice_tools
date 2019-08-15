@@ -15,11 +15,11 @@ import win32ui
 import xlrd
 import threading
 import random
-
+import webbrowser
 
 devices = []
-path_cfg = 'libhrsc_cfg.so'
-path_conf = 'libhesr_conf.so'
+path_cfg = 'hisf_config.ini'
+#path_conf = 'libhesr_conf.so'
 APP_ID = '16747184'
 API_KEY = 'vzMAGVTCq8chbXkKlBFUZQF7'
 SECRET_KEY = '8rYnCpkTCigz5FUZQEjfnZ7PY7l8GyvR'
@@ -36,7 +36,7 @@ def get_deviceid():  # get设备id
 
 root = tk.Tk()  # 创建窗口
 root.geometry("550x400+0+0")  # 距离屏幕边缘值
-root.wm_title('语音小工具v3.0(最终版)')  # root窗口标题
+root.wm_title('语音小工具v3.3(最终版)')  # root窗口标题
 root.resizable(width=False, height=False)  # 拒绝改变窗口大小，如需改变，请改为True
 text_device = Text(root, width=11,height=1)
 text_device.grid(row=0, column=1,sticky=W)
@@ -112,8 +112,9 @@ def clear_log():
     clear_tc_data()
     messagebox.showinfo(title='提示', message='清除成功(wav/data/wakeupPcm)')
 def pull_file():
-    os.popen('adb pull /vendor/etc/hrsc/libhrsc_cfg.so')
-    os.popen('adb pull /vendor/etc/hrsc/libhesr_conf.so')
+    os.popen('adb pull /vendor/etc/hrsc/hisf_config.ini')
+    #os.popen('adb pull /vendor/etc/hrsc/libhesr_conf.so')
+    time.sleep(2)
     print('pull file suucess ')
 
 
@@ -127,10 +128,10 @@ def get_row(path, data):
     return number
 
 
-def modify(path, data, data1):  # 文件路径   #要查找的唯一字段   #唯一字段要替换成什么
-    number = get_row(path, data)
-    print('修改%s文件的%s' % (path, data1))
-    f = open(path, 'r+')
+def modify(pa, data, data1):  # 文件路径   #要查找的唯一字段   #唯一字段要替换成什么
+    number = get_row(pa, data)
+    print('修改%s文件的%s' % (pa, data1))
+    f = open(pa, 'r+')
     file = []
     for line in f:
         file.append(line)
@@ -163,43 +164,52 @@ def r_remount():
 def push_file():
     cwd = os.getcwd()
     absolute_path1 = cwd + '\\' + path_cfg  # 修改后的文件绝对路径
-    absolute_path2 = cwd + '\\' + path_conf
+    #absolute_path2 = cwd + '\\' + path_conf
     device_path = 'vendor/etc/hrsc'  # push到车机的位置
     cmd1 = 'adb push ' + absolute_path1 + ' ' + device_path
-    cmd2 = 'adb push ' + absolute_path2 + ' ' + device_path
+    #cmd2 = 'adb push ' + absolute_path2 + ' ' + device_path
     info = os.popen(cmd1).read()  # 获取返回，判断是否push成功
     print(info)
     if info.find('Read-only') != -1:
         print('push fail,start remount model')
         r_remount()
     else:
-        os.popen(cmd2)
-    print('push success ')
+
+        #os.popen(cmd2)
+        print('push success ')
     return
 
 
 def modify_file():
-    modify(path_cfg, 'SAVE_DATA_PATH', 'SAVE_DATA_PATH=sdcard/hrsc/log ## savepath')
-    modify(path_cfg, 'SAVE_DATA_FLAG', 'SAVE_DATA_FLAG=1')
-    modify(path_conf, 'LOG_DIR=', 'LOG_DIR=/sdcard/hrsc/log')
-    modify(path_conf, 'SAVE_LOG_FILE=', 'SAVE_LOG_FILE=1')
-    modify(path_conf, 'LOG_LEVEL', 'LOG_LEVEL=3')
-    modify(path_conf, 'CHINESE_DICT=', 'CHINESE_DICT=libparam_cn.so')
-    modify(path_conf, 'PDB_FILE=', 'PDB_FILE=dict.pdb')
-    modify(path_conf, 'MONO_LIST=', 'MONO_LIST=libmono.so')
+    modify(path_cfg, 'IS_SAVE_DATA=', 'IS_SAVE_DATA=7')
+    modify(path_cfg, 'LOG_FILE_SIZE=', 'LOG_FILE_SIZE=100M')
+    modify(path_cfg, 'LOG_FILE=', 'LOG_FILE=/sdcard/hrsc/hisf.so:\' /vendor/etc/hrsc/hisf_config.ini')
+    # modify(path_conf, 'SAVE_LOG_FILE=', 'SAVE_LOG_FILE=1')
+    # modify(path_conf, 'LOG_LEVEL', 'LOG_LEVEL=3')
+    # modify(path_conf, 'CHINESE_DICT=', 'CHINESE_DICT=libparam_cn.so')
+    # modify(path_conf, 'PDB_FILE=', 'PDB_FILE=dict.pdb')
+    # modify(path_conf, 'MONO_LIST=', 'MONO_LIST=libmono.so')
 
 
 def operation():
-    os.popen('adb shell&&mkdir /sdcard/hrsc')
-    print('excute adb shell&&mkdir /sdcard/hrsc')
-    os.popen('adb shell&&touch /sdcard/hrsc/log')
-    print('excute adb shell&&touch /sdcard/hrsc/log')
-
-def Misawakening_config():
+    os.popen('adb root')
+    print('excute adb shell mkdir /sdcard/hrsc/')
+    os.popen(r'adb shell mkdir /sdcard/hrsc/')
+    print('excute adb shell  touch /sdcard/hrsc/hrsc.debug')
+    os.popen(r'adb shell touch /sdcard/hrsc/hrsc.debug')
+def depingxian():
+    operation()
     pull_file()
     modify_file()
     push_file()
-    operation()
+    print('重启')
+    os.popen('adb reboot ')
+
+
+def Misawakening_config():
+    t0 = threading.Thread(target=depingxian)
+    t0.start()
+
 
 
 def zipDir(dirpath, outFullName):
@@ -247,45 +257,31 @@ def get_current_time():
 
 
 def clear_tc_data():
-    p_1 = r'adb shell "cd /sdcard/tencent/wecarspeech/wakeupPcm && rm -rf *"'
-    p_2 = r'adb shell "cd /sdcard/tencent/wecarspeech/data && rm -rf *"'
-    p_3 = r'adb shell "cd /sdcard/tencent/wecarspeech/wav && rm -rf *"'
-   # p_4 = r'adb shell "cd /sdcard/tencent/wecarspeech/log && rm -rf *"'
-    os.popen(p_1)
-    os.popen(p_2)
-    os.popen(p_3)
+    #p_1 = r'adb shell "cd /sdcard/tencent/wecarspeech/wakeupPcm && rm -rf *"'
+    #p_2 = r'adb shell "cd /sdcard/tencent/wecarspeech/data && rm -rf *"'
+    #p_3 = r'adb shell "cd /sdcard/tencent/wecarspeech/wav && rm -rf *"'
+   #p_4 = r'adb shell "cd /sdcard/tencent/wecarspeech/log && rm -rf *"'
+    #os.popen(p_1)
+    #os.popen(p_2)
+    #os.popen(p_3)
     #os.popen(p_4)
     #os.popen(r'adb shell "cd sdcard/tencent/wecarnavi/log/ &&rm -rf *"')
-
+    delete_file(r'D:\log\wecarspeech\data')
+    print('success')
 def push_tc_cfg():
     isExists = os.path.exists('d:\\tc_cfg\\wakeup.cfg')
     if isExists ==True:
-        res = os.popen(r'adb shell "cd /sdcard/tencent/wecarspeech/ &&ls "').readlines()
-        if str(res).find('cfg') != -1:
-            print(r'cfg mulu is already')
-            res_next = os.popen(r'adb shell "cd /sdcard/tencent/wecarspeech/cfg &&ls "').readlines()
-            if str(res_next).find('wake') != -1:
-                print('wake.cfg is already')
-                messagebox.showinfo(title='提示', message='wake.cfg is already')
-            else:
-                os.popen('adb push d:\\tc_cfg\\wakeup.cfg /sdcard/tencent/wecarspeech/cfg/')
-                messagebox.showinfo(title='提示', message='push wake.cfg sucess')
-        else:
-            os.popen('adb shell "cd /sdcard/tencent/wecarspeech/ &&mkdir cfg"')
-            res_next = os.popen('adb shell "cd /sdcard/tencent/wecarspeech/cfg &&ls "').readlines()
-            if str(res_next).find('wake') != -1:
-                print('wake.cfg is already')
-                messagebox.showinfo(title='提示', message='wake.cfg is already')
-            else:
-                os.popen('adb push d:\\tc_cfg\\wakeup.cfg /sdcard/tencent/wecarspeech/cfg/')
-                messagebox.showinfo(title='提示', message='push wake.cfg sucess')
         try:
-            os.popen('adb push d:\\tc_cfg\\aisdk.cfg /sdcard/tencent/wecarspeech/cfg/')
-            os.popen('adb push d:\\tc_cfg\\blacklist.txt /data/local/tmp/')
+            os.system('adb push d:\\tc_cfg\\. /sdcard/tencent/wecarspeech/')
+            print('push success..open log')
+            #os.system('adb shell setprop persist.logd.loglevel 0')             #开启离线log全量抓取开关
+            #os.system('adb shell setprop persist.logd.logpersistd logcatd')
+            print('ok')
+            os.system('adb reboot')
         except:
-            print('自动导入monkey黑名单失败。请将blacklist.txt放到d:\\tc_cfg')
+            print('自动导入cfg失败。请将配置文件放到d:\\tc_cfg')
     else:
-        messagebox.showinfo(title='提示', message=r'请把wake.cfg和blacklist.txt文件放到d:\tc_cfg目录下')
+        messagebox.showinfo(title='提示', message=r'请把语音配置文件放到d:\tc_cfg目录下')
 
 def start_logcat():
     time_current = get_current_time()
@@ -312,7 +308,6 @@ def countDown(number):
 
 
 def pull_maplog():
-    #countDown(180)
     current_map=packagename.get()
     print('当前导出的是 %s 的log'%(current_map))
     if current_map=='腾讯地图':
@@ -329,11 +324,48 @@ def pull_maplog():
         zipDir(r'D:\log\bd_map', r'D:\log\百度地图.zip')
 
     open_logpath()
+def config_gaode(a,b):
+    os.popen('adb shell input keyevent 3')
+    time.sleep(1)
+    os.system('adb shell am start com.autonavi.amapauto/com.autonavi.amapauto.MainMapActivity')
+    time.sleep(2)
+    os.popen('adb shell input tap 1860 580')
+    time.sleep(1)
+    cmd1='adb shell input text '+a
+    cmd3='adb shell input keyevent 66'
+    cmd2='adb shell input text '+b
+    os.popen(cmd1)
+    time.sleep(1)
+    os.popen(cmd3)
+    time.sleep(1)
+    os.popen(cmd2)
+    time.sleep(1)
+    os.popen(cmd3)
+def activy_gaode():
+    current_device=p_name.get()
+    print(current_device)
+    if current_device.find('437')!=-1:
+        config_gaode('3HHD4M7R29Z9AC5CT7QQ36QE','PC944ZLWRCPTNS6ZDR4SZHJM')
+    elif current_device.find('444')!=-1:
+        print('444 current is unknow the gaode code !!')
+        #config_gaode('','')
+    elif current_device.find('550') != -1:
+        config_gaode('38YSYMWY8M3XB9GRV29XKMG4','BLMC6PJ7FV9NS67DQ3MRK5XG')
+    elif current_device.find('722') != -1:
+        config_gaode('HHD3K2MZ5MQC8JQ7LXV5A95F','JZ53QJ8H6UDSPLCEF6VDVNAM')
+    elif current_device.find('周书朋') != -1:
+        config_gaode('PKMXQP7LPKACH8LUT74NVNS5','3J4TAPS473L545GG7WRFCUMU')
+    elif current_device.find('李春雪') != -1:
+        config_gaode('KBHLVW4U7QSH6SZE34TAC44F','M5FQRLV4LRZR3RS227DZD3L4')
+    elif current_device.find('程金涛') != -1:
+        config_gaode('VR7EQKRCFBDFQ8GH4XPJC2LZ','Q95JV5HNFGWRNPDE4YA3TASL')
+    return
+
 def end_logcat():
+    pid_last=[]
     pid_list = []
     p_6 = r'adb shell "ps | grep log"'
     get_logcat_pid = list(os.popen(p_6).readlines())
-    print(get_logcat_pid)
     for i in get_logcat_pid:
         pid = re.findall(r'.+?(\d+).+?S.*log', i)
         if len(pid) != 0:
@@ -350,16 +382,24 @@ def end_logcat():
 def thread_tc_log():
     t = threading.Thread(target=tc_logcat_pull)
     t.start()
-
+def delete_file(p_p):
+    for i in os.listdir(p_p):
+        path_file = os.path.join(p_p, i)
+        if os.path.isfile(path_file):
+            os.remove(path_file)
+        else:
+            delete_file(path_file)
 def tc_logcat_pull():  # 导出tc  log
     time_current = get_current_time()
     print(time_current + '\n腾讯log导出中......请等待30s')
     cmd_1 = r'adb shell am broadcast -a carcontrol.flushLog'
     os.popen(cmd_1)
-    time.sleep(30)
+    #time.sleep(30)
     cmd_2 = r'adb pull /sdcard/tencent/wecarspeech d:\log'
     os.system(cmd_2)
-    time.sleep(3)
+    time.sleep(1)
+    delete_file(r'D:\log\wecarspeech\data')
+    time.sleep(1)
     zipDir(r'D:\log\wecarspeech', r'D:\log\wecarspeech.zip')
     open_logpath()
 
@@ -370,7 +410,7 @@ def mkdir():
     isExists_t=os.path.exists(path1)
     print('检查D盘目录是否存在 log 和 tc_cfg 目录')
     if not isExists_t:
-        os.makedirs()
+        os.makedirs(path1)
         print('静默创建d:\\tc_cfg目录,请把wake.cfg、aisdk.cfg、blacklist.txt(跑monkey用)文件放入 d:\\tc_cfg')
     else:
         print('d:\\tc_cfg已存在')
@@ -433,14 +473,15 @@ def offline_log():
     path_b = 'D:\\log\\offline_logs\\' + currenttime + '\\Log_management'
     create_logdir(path_a)
     create_logdir(path_b)
-    p_a = 'adb logcat --flush'
+    p_a = 'adb shell logcat --flush'
     p_b = 'REM adb pull /data/logs D:\\log\\offline_logs\\' + currenttime + '\\logs'
     p_c = 'adb pull /log D:\\log\\offline_logs\\' + currenttime + '\\Log_management'
-    os.popen(p_a)
+    os.system('adb root ')
+    os.system(p_a)
     print(p_a)
-    os.popen(p_b)
+    os.system(p_b)
     print(p_b)
-    os.popen(p_c)
+    os.system(p_c)
     print(p_c)
     print('请等待offline_log导出完成，过程可能较长.....')
     open_logpath()
@@ -460,17 +501,7 @@ def check_deviceid():  # get设备id
     return number
 def adb_reboot():
     os.popen('adb reboot')
-    time.sleep(2)
-    for i in range(100):
-        number =check_deviceid()
-        if number >= 1:
-            print('车机已启动完成')
-            break
-        else:
-            time.sleep(2)
-    os.popen('adb shell input tap 2302 420 ')
-    for j in range(10):
-        os.popen('adb shell input tap 34 633')
+
 def start_settings():
     os.popen('adb shell am start com.android.settings/com.android.settings.Settings')
 
@@ -484,22 +515,55 @@ def play():
     str_word=[
         'you are very bored',
         'why click this button?',
-        'do you want go to home'
+        'Guess what going to happen.',
+        'hi,if you not busy please study',
+        'It is never too old to learn.',
+        'There is no royal road to learning.',
+        'No cross, no crown. ',
+        'Doing is better than saying. ',
+        'No sweat,no sweet.',
+        'Mountains look beautiful from a distance. ',
+        'Miracels are to those who believe in them.',
+        '7'
     ]
+    url_list=['http://www.baidu.com',
+              'https://www.zhihu.com',
+              'https://github.com/',
+              'https://www.iconfont.cn/',
+              'https://music.163.com/',
+              'https://www.qidian.com/'
+              ]
     data=random.choice(str_word)
-    print(data)
+    url=random.choice(url_list)
+    if data=='7':
+        print('this is lucky 7  open random web page for you ')
+        webbrowser.open(url)
+    else:
+        print(data)
     return
 packagelist=   ['百度地图',
              '高德地图',
              '腾讯地图'
          ]
+activy_list=['实车437',
+             '实车444',
+             '实车550',
+             '实车722',
+             '台架周书朋',
+             '台架李春雪',
+             '台架程金涛']
 test=tk.StringVar()                                          #创建下拉框
 packagename=ttk.Combobox(root,textvariable=test,width=8,state='readonly')#state=readonly输入框不可写入，如需写入请删掉state
 packagename['values']=(packagelist)
 packagename.grid(row=0,column=4,sticky=W)
 packagename.current(1)                                     #下拉框默认显示值
 packagename.bind("<<ComboboxSelected>>", show_msg)
-
+map_acticy=tk.StringVar()                                          #创建下拉框
+p_name=ttk.Combobox(root,textvariable=map_acticy,width=8,state='readonly')#state=readonly输入框不可写入，如需写入请删掉state
+p_name['values']=(activy_list)
+p_name.grid(row=7,column=0,sticky=W)
+p_name.current(0)                                     #下拉框默认显示值
+p_name.bind("<<ComboboxSelected>>", show_msg)
 
 # --------------------------按钮区-------------------------------#
 btn_device = Button(root, text="检测设备",width=10,bg='#CCCCCC',command=devicee)
@@ -544,30 +608,30 @@ btn_push_tc_cfg.grid(row=4, column=3, sticky=W)
 
 lbl1 = Button(root,text='???',width=10,command=play)
 lbl1.grid(row=5, column=3,sticky=W)
-dipingxian = Button(root,text='配置误唤醒',width=10,bg='#CDC1C5',command=Misawakening_config)
+dipingxian = Button(root,text='配置地平线',width=10,bg='#CDC1C5',command=Misawakening_config)
 dipingxian.grid(row=7, column=3,sticky=W)
 
 btn_screen = Button(root, text='车机截图 ', width=10,command=screen_adb)
-btn_screen.grid(row=5, column=2, sticky=W)
+btn_screen.grid(row=6, column=3, sticky=W)
 
-btn_clear_data = Button(root, text='清除wecarspeech缓存',width=24,command=clear_log)
-btn_clear_data.grid(row=5, column=0, columnspan=2,sticky=W)
+# btn_clear_data = Button(root, text='清除wecarspeech缓存',width=24,command=clear_log)
+# btn_clear_data.grid(row=5, column=0, columnspan=2,sticky=W)
 
-btn_monkey_d = Button(root, text='副屏monkey',width=10, command=monkey_deputy)
-btn_monkey_d.grid(row=7, column=0, sticky=W)
+btn_monkey_d = Button(root, text='激活高德',width=10, command=activy_gaode)
+btn_monkey_d.grid(row=7, column=1, sticky=W)
 
-btn_init_voice = Button(root, text='打开VR_app', width=10,command=init_voice)
-btn_init_voice.grid(row=6, column=3, sticky=W)
+# btn_init_voice = Button(root, text='打开VR_app', width=10,command=init_voice)
+# btn_init_voice.grid(row=6, column=3, sticky=W)
 
 btn_reboot = Button(root, text='重启设备 ',width=10, command=adb_reboot)
-btn_reboot.grid(row=7, column=2, sticky=W)
+btn_reboot.grid(row=7, column=4, sticky=W)
 
 Label(root, text=r'提示:',font='blod').grid(row=8, column=0,columnspan=4,sticky=W)
 Label(root, text=r'0.首次使用先点【建log目录】按钮：创建了d:\log和d:\tc_cfg目录').grid(row=9, column=0,columnspan=10,sticky=W)
 Label(root, text='1.语音bug：logcat、wecarspeech').grid(row=10, column=0,columnspan=10,sticky=W)
 Label(root, text='2.地图bug：logcat、wecarspeech、对应地图log').grid(row=11, column=0,columnspan=4,sticky=W)
-Label(root, text='3.清除wecarspeech缓存：清除/sdcard/tencent/wecarspeech/wav、data、wakeupPcm').grid(row=12, column=0,columnspan=10,sticky=W)
-Label(root, text=r'4.导入cfg：把wake.cfg/aisdk.cfg/balcklist.txt放入d:\tc_cfg目录,刷机完点击按钮自动放到对应位置').grid(row=13, column=0,columnspan=10,sticky=W)
-Label(root, text=r'5.配置误唤醒：自动执行了误唤醒log的配置步骤，过程中可能包含重启车机').grid(row=14, column=0,columnspan=10,sticky=W)
+Label(root, text='3.清除wecarspeech缓存：清除/sdcard/tencent/wecarspeech/多余文件').grid(row=12, column=0,columnspan=10,sticky=W)
+Label(root, text=r'4.导入cfg：把wake.cfg/aisdk.cfg/comm.cfg放入d:\tc_cfg目录,刷机完点击按钮自动放到对应位置').grid(row=13, column=0,columnspan=10,sticky=W)
+Label(root, text=r'5.配置地平线：自动执行了地平线log的配置步骤，过程中可能包含重启车机').grid(row=14, column=0,columnspan=10,sticky=W)
 
 root.mainloop()
