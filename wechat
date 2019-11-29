@@ -1,0 +1,51 @@
+#coding=utf-8
+from wxpy import *
+import threading
+import re
+import codecs
+peopel=''
+all_friends=[]
+bot =Bot(cache_path=True)
+my_f=bot.friends()
+for i in range(len(my_f)):
+    people_name = re.findall('.*:(.*)>',str(my_f[i]))[0]
+    all_friends.append(people_name)
+@bot.register()
+def print_others(msg):
+    print(msg)
+
+def send(text):
+    res=my_f.search(peopel)[0]
+    print('发送给'+peopel)
+    res.send(text)
+def main():
+    bot.join()
+
+t = threading.Thread(target=main)
+t.start()
+print("""支持以下指令
+    a  :  显示所有好友昵称
+    c  ： 更改发送昵称
+    s  :  发送的内容
+          """)
+while True:
+
+    wx_type=input()
+    if wx_type=='s':
+        print('请输出你要发送的内容')
+        text=input()
+        send(text)
+    elif wx_type=='a':
+        for i in all_friends:
+            print(i)
+    elif wx_type=='c':
+        print('请输入对方的昵称')
+        name=input()
+        print('当前在跟%s聊天'%(name))
+        peopel=name
+    elif wx_type=='close':
+        print('end chat')
+        break
+    else:
+        print('这个指令不在支持范围内~')
+
